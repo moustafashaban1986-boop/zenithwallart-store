@@ -113,3 +113,95 @@ async function sendEmail(to, product, downloadUrl, aiMessage) {
 // ─── START ─────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`🚀 ZenithWallArt running on port ${PORT}`));
+
+
+// ─── ETSY AUTO-LISTING ENGINE ──────────────────────────────────────────────
+
+const cron = require('node-cron');
+
+async function generateAndPostEtsyListings() {
+  console.log('🎨 Starting Etsy auto-listing job...');
+  const anthropic = getAnthropic();
+
+  try {
+    // Step 1: Claude generates 10 listings
+    const msg = await anthropic.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 4000,
+      messages: [{
+        role: 'user',
+        content: `Generate 10 unique Etsy digital wall art product listings. Return ONLY a JSON array, no markdown. Each object must have:
+- title (max 140 chars, SEO-optimized for Etsy searches)
+- description (250 words, persuasive, mentions instant download, 5 sizes, 300 DPI)
+- tags (array of exactly 13 strings, each max 20 chars, high-traffic Etsy keywords)
+- price (number between 6.99 and 12.99)
+
+Cover these styles one per listing: abstract gold, botanical line art, minimalist black white, boho sunset, coastal watercolor, nordic geometric, vintage floral, dark moody, pastel gradient, maximalist pattern. Make each unique and desirable.`
+      }]
+    });
+
+    const text = msg.content[0].text.replace(/```json/g, '').replace(/```/g, '').trim();
+    const listings = JSON.parse(text);
+    console.log(`✅ Claude generated ${listings.length} listings`);
+
+    // Step 2: Post each to Etsy
+    let posted = 0;
+    for (const listing of listings) {
+      try {
+        const response = await fetch(`https://openapi.etsy.com/v3/application/shops/${process.env.ETSY_SHOP_ID}/listings`, {
+          method: 'POST',
+          headers: {
+            'x-api-key': process.env.ETSY_API_KEY,
+            'Authorization': `Bearer ${process.env.ETSY_ACCESS_TOKEN}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            quantity: 999,
+            title: listing.title,
+            description: listing.description,
+            price: listing.price,
+            who_made: 'i_did',
+            when_made: 'made_to_order',
+            taxonomy_id: 2078,
+            type: 'download',
+            tags: listing.tags,
+            is_digital: true,
+            shipping_profile_id: null,
+          })
+        });
+        const data = await response.json();
+        if (data.listing_id) {
+          posted++;
+          console.log(`✅ Posted: ${listing.title.substring(0, 50)}...`);
+        } else {
+          console.log(`❌ Failed: ${JSON.stringify(data).substring(0, 100)}`);
+        }
+        // Rate limit: 5 per second
+        await new Promise(r => setTimeout(r, 300));
+      } catch (err) {
+        console.log(`❌ Error posting listing: ${err.message}`);
+      }
+    }
+    console.log(`🎉 Etsy job done! Posted ${posted}/10 listings`);
+  } catch (err) {
+    console.error('❌ Etsy job error:', err.message);
+  }
+}
+
+// Run every day at 9am
+cron.schedule('0 9 * * *', () => {
+  console.log('⏰ Daily Etsy listing job triggered');
+  generateAndPostEtsyListings();
+}, { timezone: 'Asia/Dubai' });
+
+// Manual trigger endpoint (for testing)
+app.post('/api/run-etsy-job', async (req, res) => {
+  const secret = req.headers['x-secret'];
+  if (secret !== process.env.ANTHROPIC_API_KEY) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  res.json({ message: 'Etsy job started! Check Hostinger runtime logs.' });
+  generateAndPostEtsyListings();
+});
+
+console.log('✅ Etsy auto-listing engine loaded — runs daily at 9am Dubai time');
