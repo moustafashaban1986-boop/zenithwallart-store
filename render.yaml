@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: zenithwallart-store
+    runtime: node
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: SUPABASE_URL
+        value: https://nwvakgsyybcltkysptac.supabase.co
+      - key: SUPABASE_ANON_KEY
+        value: sb_publishable_cpc4-qdZITqDsxoT5NrztA_I8rzUA35
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: EMAIL_USER
+        sync: false
+      - key: EMAIL_PASS
+        sync: false
+      - key: STORE_URL
+        value: https://zenithwallart.onrender.com
+      - key: PORT
+        value: 3000
