@@ -205,3 +205,87 @@ app.post('/api/run-etsy-job', async (req, res) => {
 });
 
 console.log('✅ Etsy auto-listing engine loaded — runs daily at 9am Dubai time');
+
+
+// ─── ETSY OAUTH FLOW ──────────────────────────────────────────────────────
+
+const crypto = require('crypto');
+
+// Step 1: Start OAuth - generates the Etsy login URL
+app.get('/etsy-auth', (req, res) => {
+  const codeVerifier = crypto.randomBytes(32).toString('base64url');
+  const codeChallenge = crypto.createHash('sha256').update(codeVerifier).digest('base64url');
+  const state = crypto.randomBytes(16).toString('hex');
+
+  // Store verifier temporarily (in production use Redis/DB)
+  global._etsyCodeVerifier = codeVerifier;
+  global._etsyState = state;
+
+  const params = new URLSearchParams({
+    response_type: 'code',
+    redirect_uri: `${process.env.STORE_URL}/etsy-callback`,
+    scope: 'listings_w listings_r shops_r',
+    client_id: process.env.ETSY_API_KEY,
+    state: state,
+    code_challenge: codeChallenge,
+    code_challenge_method: 'S256',
+  });
+
+  const authUrl = `https://www.etsy.com/oauth/connect?${params}`;
+  console.log('🔐 Etsy OAuth URL generated');
+  res.redirect(authUrl);
+});
+
+// Step 2: Etsy redirects back here with the code
+app.get('/etsy-callback', async (req, res) => {
+  const { code, state } = req.query;
+
+  if (state !== global._etsyState) {
+    return res.status(400).send('Invalid state. Try again.');
+  }
+
+  try {
+    const tokenRes = await fetch('https://api.etsy.com/v3/public/oauth/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        grant_type: 'authorization_code',
+        client_id: process.env.ETSY_API_KEY,
+        redirect_uri: `${process.env.STORE_URL}/etsy-callback`,
+        code: code,
+        code_verifier: global._etsyCodeVerifier,
+      })
+    });
+
+    const tokens = await tokenRes.json();
+
+    if (tokens.access_token) {
+      console.log('✅ ETSY ACCESS TOKEN:', tokens.access_token);
+      console.log('✅ ETSY REFRESH TOKEN:', tokens.refresh_token);
+
+      // Show tokens on screen so you can copy them to Hostinger env vars
+      res.send(`
+        <html><head><style>
+          body{font-family:monospace;background:#0a0a0f;color:#f0ede8;padding:3rem;max-width:800px}
+          h1{color:#c9a96e} .token{background:#1a1a2e;padding:1rem;margin:1rem 0;word-break:break-all;border:1px solid #c9a96e}
+          .label{color:#00d4c8;font-size:0.8rem;margin-bottom:0.5rem}
+          .btn{background:#c9a96e;color:#0a0a0f;padding:0.8rem 1.5rem;border:none;cursor:pointer;font-size:1rem;margin-top:1rem}
+        </style></head><body>
+          <h1>✅ Etsy Connected!</h1>
+          <p>Copy these into your Hostinger Environment Variables:</p>
+          <div class="label">ETSY_ACCESS_TOKEN</div>
+          <div class="token" id="at">${tokens.access_token}</div>
+          <div class="label">ETSY_REFRESH_TOKEN</div>
+          <div class="token" id="rt">${tokens.refresh_token}</div>
+          <p style="color:#00d4c8;margin-top:2rem">✅ Add both to Hostinger → Environment Variables → Save & Redeploy</p>
+          <p style="color:rgba(240,237,232,0.5)">Then your Etsy auto-listing will run every day at 9am!</p>
+        </body></html>
+      `);
+    } else {
+      res.send(`<pre style="background:#0a0a0f;color:#f00;padding:2rem">Error: ${JSON.stringify(tokens, null, 2)}</pre>`);
+    }
+  } catch (err) {
+    res.status(500).send(`Error: ${err.message}`);
+  }
+});
+
