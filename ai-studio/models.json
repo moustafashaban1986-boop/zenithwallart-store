@@ -1,0 +1,120 @@
+{
+  "_comment": "Single source of truth for model downloads. Used by download-models.ps1 and claude-comfy/presets.py. Sizes are approximate GB.",
+  "files": {
+    "flux1-schnell-Q4_K_S.gguf": {
+      "folder": "diffusion_models",
+      "url": "https://huggingface.co/city96/FLUX.1-schnell-gguf/resolve/main/flux1-schnell-Q4_K_S.gguf",
+      "gb": 6.8,
+      "note": "FLUX.1 schnell image model, 4-bit GGUF (Apache-2.0)"
+    },
+    "t5xxl_fp8_e4m3fn_scaled.safetensors": {
+      "folder": "text_encoders",
+      "url": "https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/t5xxl_fp8_e4m3fn_scaled.safetensors",
+      "gb": 4.9,
+      "note": "T5-XXL text encoder (fp8). Shared by FLUX and LTX-Video"
+    },
+    "clip_l.safetensors": {
+      "folder": "text_encoders",
+      "url": "https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/clip_l.safetensors",
+      "gb": 0.25,
+      "note": "CLIP-L text encoder for FLUX"
+    },
+    "ae.safetensors": {
+      "folder": "vae",
+      "url": "https://huggingface.co/Comfy-Org/Lumina_Image_2.0_Repackaged/resolve/main/split_files/vae/ae.safetensors",
+      "gb": 0.34,
+      "note": "FLUX VAE"
+    },
+    "flux1-schnell-fp8.safetensors": {
+      "folder": "checkpoints",
+      "url": "https://huggingface.co/Comfy-Org/flux1-schnell/resolve/main/flux1-schnell-fp8.safetensors",
+      "gb": 17.2,
+      "note": "All-in-one FLUX schnell checkpoint (fp8). Alternative to the GGUF pack"
+    },
+    "wan2.2_ti2v_5B_fp16.safetensors": {
+      "folder": "diffusion_models",
+      "url": "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/diffusion_models/wan2.2_ti2v_5B_fp16.safetensors",
+      "gb": 10.0,
+      "note": "Wan 2.2 5B text+image-to-video. Best all-round video model for 16GB VRAM"
+    },
+    "wan2.2_vae.safetensors": {
+      "folder": "vae",
+      "url": "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/vae/wan2.2_vae.safetensors",
+      "gb": 1.4,
+      "note": "VAE for the Wan 2.2 5B model"
+    },
+    "umt5_xxl_fp8_e4m3fn_scaled.safetensors": {
+      "folder": "text_encoders",
+      "url": "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors",
+      "gb": 6.7,
+      "note": "UMT5-XXL text encoder (fp8). Shared by all Wan models"
+    },
+    "wan_2.1_vae.safetensors": {
+      "folder": "vae",
+      "url": "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/vae/wan_2.1_vae.safetensors",
+      "gb": 0.25,
+      "note": "VAE for Wan 2.1 14B models"
+    },
+    "clip_vision_h.safetensors": {
+      "folder": "clip_vision",
+      "url": "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/clip_vision/clip_vision_h.safetensors",
+      "gb": 1.26,
+      "note": "CLIP vision encoder for Wan 2.1 image-to-video"
+    },
+    "wan2.1-t2v-14b-Q4_K_M.gguf": {
+      "folder": "diffusion_models",
+      "url": "https://huggingface.co/city96/Wan2.1-T2V-14B-gguf/resolve/main/wan2.1-t2v-14b-Q4_K_M.gguf",
+      "gb": 10.1,
+      "note": "Wan 2.1 14B text-to-video, Q4_K_M GGUF"
+    },
+    "wan2.1-i2v-14b-480p-Q4_K_M.gguf": {
+      "folder": "diffusion_models",
+      "url": "https://huggingface.co/city96/Wan2.1-I2V-14B-480P-gguf/resolve/main/wan2.1-i2v-14b-480p-Q4_K_M.gguf",
+      "gb": 10.4,
+      "note": "Wan 2.1 14B image-to-video (480p), Q4_K_M GGUF"
+    },
+    "ltx-video-2b-v0.9.5.safetensors": {
+      "folder": "checkpoints",
+      "url": "https://huggingface.co/Lightricks/LTX-Video/resolve/main/ltx-video-2b-v0.9.5.safetensors",
+      "gb": 6.3,
+      "note": "LTX-Video 2B (includes VAE). Fastest video model"
+    }
+  },
+  "packs": {
+    "starter": {
+      "description": "Recommended first install: FLUX schnell images (GGUF) + Wan 2.2 5B video. ~30 GB",
+      "files": [
+        "flux1-schnell-Q4_K_S.gguf",
+        "t5xxl_fp8_e4m3fn_scaled.safetensors",
+        "clip_l.safetensors",
+        "ae.safetensors",
+        "wan2.2_ti2v_5B_fp16.safetensors",
+        "wan2.2_vae.safetensors",
+        "umt5_xxl_fp8_e4m3fn_scaled.safetensors"
+      ]
+    },
+    "ltx": {
+      "description": "LTX-Video 2B: very fast clips, lower fidelity. ~11 GB (T5 encoder shared with FLUX)",
+      "files": [
+        "ltx-video-2b-v0.9.5.safetensors",
+        "t5xxl_fp8_e4m3fn_scaled.safetensors"
+      ]
+    },
+    "wan21-14b": {
+      "description": "Wan 2.1 14B text-to-video + image-to-video in Q4_K_M GGUF. Highest quality, slowest. ~29 GB",
+      "files": [
+        "wan2.1-t2v-14b-Q4_K_M.gguf",
+        "wan2.1-i2v-14b-480p-Q4_K_M.gguf",
+        "umt5_xxl_fp8_e4m3fn_scaled.safetensors",
+        "wan_2.1_vae.safetensors",
+        "clip_vision_h.safetensors"
+      ]
+    },
+    "flux-fp8": {
+      "description": "Alternative single-file FLUX schnell checkpoint if the GGUF download fails. ~17 GB",
+      "files": [
+        "flux1-schnell-fp8.safetensors"
+      ]
+    }
+  }
+}

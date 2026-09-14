@@ -90,3 +90,13 @@ You receive $8.43 per sale
 6. **Express** → serves the store and handles webhooks
 
 **You do nothing. The machine runs 24/7.**
+
+---
+
+## 🎬 AI Studio — free local image & video generation with Claude
+
+The `ai-studio/` folder turns a Lenovo Legion 7 (RTX 3080 16 GB) into an offline, unlimited
+image/video generator (ComfyUI + FLUX + Wan 2.2/2.1 + LTX-Video) that Claude controls through an
+MCP server. Right-click `ai-studio\INSTALL.bat` → Run as administrator, then ask Claude to
+"generate an image of ..." or "make a 2 second video of ...".
+See [`ai-studio/README.md`](ai-studio/README.md) for the full guide.
