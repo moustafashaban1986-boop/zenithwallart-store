@@ -100,3 +100,7 @@ image/video generator (ComfyUI + FLUX + Wan 2.2/2.1 + LTX-Video) that Claude con
 MCP server. Right-click `ai-studio\INSTALL.bat` → Run as administrator, then ask Claude to
 "generate an image of ..." or "make a 2 second video of ...".
 See [`ai-studio/README.md`](ai-studio/README.md) for the full guide.
+
+**One-click setup on the laptop:** download [`Legion-Setup.bat`](Legion-Setup.bat) and double-click it. It installs Git,
+downloads this repository, installs ComfyUI + models, the Legion assistant and Claude Code, verifies everything, and then
+opens Claude Code on the laptop to fix anything that failed. Log: `%USERPROFILE%\legion-setup.log`.
