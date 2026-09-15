@@ -17,12 +17,14 @@ REM  (Ollama brain, speech, PC control), Claude Code - and finally opens
 REM  Claude Code on this laptop to verify and fix anything that failed.
 REM  Log: %USERPROFILE%\legion-setup.log      Safe to run again.
 REM ============================================================================
-net session >nul 2>&1
+if "%~1"=="elevated" goto :admin
+fltmc >nul 2>&1
 if %errorlevel% neq 0 (
   echo Requesting administrator rights...
-  powershell -NoProfile -Command "Start-Process -FilePath '%~f0' -Verb RunAs"
+  powershell -NoProfile -Command "Start-Process -FilePath '%~f0' -ArgumentList 'elevated' -Verb RunAs"
   exit /b
 )
+:admin
 set "PS1=%TEMP%\setup-everything.ps1"
 powershell -NoProfile -Command "$c = Get-Content -Raw -LiteralPath '%~f0'; $m = '#__PS' + '1__'; $i = $c.IndexOf($m); Set-Content -LiteralPath '%PS1%' -Value $c.Substring($i) -Encoding UTF8"
 if not exist "%PS1%" (
@@ -30,7 +32,7 @@ if not exist "%PS1%" (
   pause
   exit /b 1
 )
-powershell -NoProfile -ExecutionPolicy Bypass -File "%PS1%" %*
+powershell -NoProfile -ExecutionPolicy Bypass -File "%PS1%"
 echo.
 echo Log file: %USERPROFILE%\legion-setup.log
 pause
