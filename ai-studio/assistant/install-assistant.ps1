@@ -59,6 +59,7 @@ New-Item -ItemType Directory -Force -Path $Dest | Out-Null
 Copy-Item -Recurse -Force (Join-Path $Here "legion") $Dest
 Copy-Item -Force (Join-Path $Here "requirements*.txt") $Dest
 Copy-Item -Force (Join-Path $Here "*.bat") $Dest
+Copy-Item -Force (Join-Path $Here "run_legion.py") $Dest
 Copy-Item -Force (Join-Path $Here "README.md") $Dest
 Get-ChildItem -Path $Dest -Recurse -Directory -Filter "__pycache__" | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
 Pip @("install", "-r", (Join-Path $Dest "requirements.txt"))
@@ -71,26 +72,25 @@ if ($SkipVoice) { Warn "voice packages skipped (-SkipVoice)" } else {
         Warn "voice packages failed: $_  -> Windows built-in voices will be used; re-run later with: python_embeded\python.exe -s -m pip install -r legion\requirements-voice.txt"
     }
 }
-& $Py -s -c "import sys; sys.path.insert(0, r'$Dest'); import legion.agent, legion.web_ui; print('  Legion imports OK')"
-if ($LASTEXITCODE -ne 0) { throw "Legion failed to import (see above)" }
+& $Py -s (Join-Path $Dest "run_legion.py") doctor
+if ($LASTEXITCODE -ne 0) { throw "Legion doctor failed (see above)" }
 
 Step 3 "Launchers"
 $launch = @"
 @echo off
 cd /d "%~dp0.."
-set COMFY_BRIDGE_DIR=%~dp0..\claude-comfy
-.\python_embeded\python.exe -s -m legion %*
+.\python_embeded\python.exe -s "%~dp0run_legion.py" %*
 "@
 Set-Content -Path (Join-Path $Dest "legion.cmd") -Value $launch -Encoding ASCII
 Ok "legion.cmd (run:  legion\legion.cmd doctor | serve | voice | chat)"
 
 Step 4 "Connect to Claude (MCP)"
 if ($SkipClaude) { Warn "skipped" } else {
+    $runner = Join-Path $Dest "run_legion.py"
     $server = [ordered]@{
         command = $Py
-        args    = @("-s", "-m", "legion", "mcp")
-        cwd     = $Dest
-        env     = [ordered]@{ PYTHONPATH = $Dest; COMFY_BRIDGE_DIR = (Join-Path $ComfyDir "claude-comfy"); LEGION_MCP_ALLOW_DANGEROUS = "0" }
+        args    = @("-s", $runner, "mcp")
+        env     = [ordered]@{ COMFY_BRIDGE_DIR = (Join-Path $ComfyDir "claude-comfy"); LEGION_MCP_ALLOW_DANGEROUS = "0" }
     }
     $cfgPath = Join-Path $env:APPDATA "Claude\claude_desktop_config.json"
     New-Item -ItemType Directory -Force -Path (Split-Path $cfgPath) | Out-Null
@@ -103,7 +103,7 @@ if ($SkipClaude) { Warn "skipped" } else {
     Ok "Claude Desktop: 'legion' server added to $cfgPath (restart Claude Desktop)"
     if (Get-Command claude -ErrorAction SilentlyContinue) {
         & claude mcp remove legion -s user 2>$null | Out-Null
-        & claude mcp add --scope user --env "PYTHONPATH=$Dest" --env "COMFY_BRIDGE_DIR=$(Join-Path $ComfyDir 'claude-comfy')" legion -- $Py -s -m legion mcp
+        & claude mcp add --scope user --env "COMFY_BRIDGE_DIR=$(Join-Path $ComfyDir 'claude-comfy')" legion -- $Py -s $runner mcp
         Ok "Claude Code: 'legion' registered"
     }
 }
