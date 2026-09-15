@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Legion</title>
+<style>
+  :root { --bg:#0f1115; --panel:#171a21; --line:#262b36; --text:#e8eaf0; --muted:#8b93a7; --accent:#6ea8fe; --ok:#3ecf8e; --warn:#f7b955; --bad:#ff6b6b; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:15px/1.45 system-ui, Segoe UI, sans-serif; height:100vh; display:flex; flex-direction:column; }
+  header { display:flex; flex-wrap:wrap; gap:8px 14px; align-items:center; padding:10px 16px; border-bottom:1px solid var(--line); background:var(--panel); }
+  header h1 { font-size:17px; margin:0 12px 0 0; letter-spacing:.5px; }
+  label.sel { display:flex; flex-direction:column; font-size:11px; color:var(--muted); gap:2px; }
+  select, input[type=text], input[type=password] { background:#0f1115; color:var(--text); border:1px solid var(--line); border-radius:6px; padding:5px 8px; font-size:13px; min-width:150px; }
+  .toggle { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--muted); cursor:pointer; }
+  .dot { width:9px; height:9px; border-radius:50%; background:var(--muted); display:inline-block; }
+  .dot.ok{background:var(--ok)} .dot.bad{background:var(--bad)} .dot.warn{background:var(--warn)}
+  main { flex:1; overflow:auto; padding:18px 16px; display:flex; flex-direction:column; gap:12px; max-width:980px; width:100%; margin:0 auto; }
+  .msg { padding:10px 14px; border-radius:12px; max-width:85%; white-space:pre-wrap; word-break:break-word; }
+  .me { align-self:flex-end; background:#22304a; }
+  .bot { align-self:flex-start; background:var(--panel); border:1px solid var(--line); }
+  .tool { align-self:flex-start; font-size:12px; color:var(--muted); background:#12141a; border-left:3px solid var(--accent); padding:6px 10px; border-radius:6px; max-width:85%; white-space:pre-wrap; }
+  .tool b { color:var(--text); }
+  .media { max-width:420px; border-radius:8px; margin-top:6px; display:block; }
+  .approve { display:flex; gap:8px; margin-top:8px; }
+  button { background:var(--accent); color:#06101f; border:0; border-radius:8px; padding:8px 14px; font-weight:600; cursor:pointer; }
+  button.secondary { background:#2a3040; color:var(--text); }
+  button.danger { background:var(--bad); color:#fff; }
+  button:disabled { opacity:.5; cursor:default; }
+  footer { border-top:1px solid var(--line); background:var(--panel); padding:10px 16px; }
+  .bar { display:flex; gap:8px; max-width:980px; margin:0 auto; align-items:flex-end; }
+  textarea { flex:1; resize:none; background:#0f1115; color:var(--text); border:1px solid var(--line); border-radius:10px; padding:10px 12px; font:inherit; min-height:44px; max-height:160px; }
+  #mic.rec { background:var(--bad); color:#fff; animation:pulse 1s infinite; }
+  @keyframes pulse { 50% { opacity:.6 } }
+  .hint { font-size:12px; color:var(--muted); max-width:980px; margin:6px auto 0; display:flex; justify-content:space-between; flex-wrap:wrap; gap:6px; }
+  dialog { background:var(--panel); color:var(--text); border:1px solid var(--line); border-radius:12px; padding:18px; width:min(560px, 92vw); }
+  dialog::backdrop { background:rgba(0,0,0,.6); }
+  .row { display:flex; gap:8px; align-items:center; margin:6px 0; flex-wrap:wrap; }
+  .row span.k { width:150px; color:var(--muted); font-size:13px; }
+  code { background:#0f1115; padding:1px 5px; border-radius:4px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>⚡ Legion</h1>
+  <label class="sel">Brain <select id="provider"></select></label>
+  <label class="sel">Model <select id="model"></select></label>
+  <label class="sel">Voice <select id="voice"></select></label>
+  <label class="sel">Image model <select id="image_model"></select></label>
+  <label class="sel">Video model <select id="video_model"></select></label>
+  <label class="toggle"><input type="checkbox" id="safe"> Safe mode (ask before dangerous actions)</label>
+  <label class="toggle"><input type="checkbox" id="speakBack" checked> Speak replies</label>
+  <label class="toggle"><input type="checkbox" id="handsFree"> Hands-free</label>
+  <span class="toggle"><span class="dot" id="brainDot"></span><span id="brainText">checking…</span></span>
+  <button class="secondary" id="keysBtn">API keys</button>
+  <button class="secondary" id="newBtn">New chat</button>
+</header>
+
+<main id="chat"></main>
+
+<footer>
+  <div class="bar">
+    <button id="mic" class="secondary" title="Hold or click to talk">🎤</button>
+    <textarea id="input" placeholder="Ask anything… e.g. 'open notepad and write a to-do list', 'take a screenshot and tell me what's on screen', 'generate an image of a sunset poster', 'make a 2 second video of ocean waves'"></textarea>
+    <button id="send">Send</button>
+  </div>
+  <div class="hint">
+    <span id="status">Ready.</span>
+    <span>Tip: Ctrl+Enter sends · Space toggles the mic when the text box is empty</span>
+  </div>
+</footer>
+
+<dialog id="keysDlg">
+  <h3 style="margin-top:0">Online brains (optional)</h3>
+  <p style="color:var(--muted);font-size:13px">Ollama works fully offline with no key. Online providers need a key; keys are stored only on this PC.</p>
+  <div id="keyRows"></div>
+  <div class="row" style="justify-content:flex-end;margin-top:12px">
+    <button class="secondary" onclick="document.getElementById('keysDlg').close()">Close</button>
+    <button id="saveKeys">Save</button>
+  </div>
+</dialog>
+
+<script>
+const $ = id => document.getElementById(id);
+let cfg = null, busy = false, mediaRecorder = null, chunks = [], recording = false, audioEl = null;
+
+async function api(path, opts) {
+  const r = await fetch(path, Object.assign({headers: {'Content-Type': 'application/json'}}, opts || {}));
+  return r.json();
+}
+function add(kind, html) {
+  const d = document.createElement('div'); d.className = kind; d.innerHTML = html;
+  $('chat').appendChild(d); $('chat').scrollTop = $('chat').scrollHeight; return d;
+}
+const esc = s => (s ?? '').toString().replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+function mediaLinks(text) {
+  // turn generated file paths into inline previews
+  const re = /([A-Za-z]:\\[^"\s]+?\.(png|jpg|jpeg|webp|mp4|webm)|\/[^"\s]+?\.(png|jpg|jpeg|webp|mp4|webm))/g;
+  let out = ''; const seen = new Set();
+  (text.match(re) || []).forEach(p => {
+    if (seen.has(p)) return; seen.add(p);
+    const url = '/api/file?path=' + encodeURIComponent(p);
+    out += /\.(mp4|webm)$/i.test(p) ? `<video class="media" src="${url}" controls></video>` : `<img class="media" src="${url}">`;
+  });
+  return out;
+}
+
+async function loadConfig() {
+  cfg = await api('/api/config');
+  const s = cfg.settings;
+  $('provider').innerHTML = cfg.providers.map(p => `<option value="${p.id}" ${p.id===s.provider?'selected':''}>${p.offline?'🖥️ ':'🌐 '}${esc(p.label)}${p.needs_key && !p.has_key && !s.env_keys?.[p.id] ? ' (no key)' : ''}</option>`).join('');
+  await loadModels(s.provider, s.model);
+  const v = cfg.voices;
+  const groups = [['Kokoro (offline, English)', v.kokoro_installed ? v.kokoro : []], ['Windows voices (offline, incl. Arabic if installed)', v.windows], ['Cloned voices', v.clones]];
+  $('voice').innerHTML = groups.map(([g, list]) => list.length ? `<optgroup label="${g}">` + list.map(x => `<option value="${x}" ${x===s.voice?'selected':''}>${x.replace(/^windows:|^clone:/,'')}</option>`).join('') + '</optgroup>' : '').join('') || '<option>no voice engine</option>';
+  $('image_model').innerHTML = Object.entries(cfg.image_models).map(([k,l]) => `<option value="${k}" ${k===s.image_model?'selected':''}>${l}</option>`).join('');
+  $('video_model').innerHTML = Object.entries(cfg.video_models).map(([k,l]) => `<option value="${k}" ${k===s.video_model?'selected':''}>${l}</option>`).join('');
+  $('safe').checked = !!s.safe_mode;
+  $('keyRows').innerHTML = cfg.providers.filter(p => p.needs_key).map(p => `<div class="row"><span class="k">${esc(p.label.split(' (')[0])}</span><input type="password" data-p="${p.id}" placeholder="${p.has_key ? 'key saved – type to replace' : p.key_env}"><small style="color:var(--muted)">${esc(p.note)}</small></div>`).join('');
+  health();
+}
+async function loadModels(provider, selected) {
+  const info = cfg.providers.find(p => p.id === provider);
+  $('model').innerHTML = '<option>loading…</option>';
+  const m = await api('/api/models?provider=' + provider);
+  const live = m.available || [], sugg = (info?.models || []).filter(x => !live.includes(x));
+  let html = '';
+  if (live.length) html += '<optgroup label="' + (provider==='ollama' ? 'Installed in Ollama' : 'Available') + '">' + live.map(x => `<option value="${x}">${x}</option>`).join('') + '</optgroup>';
+  if (sugg.length) html += '<optgroup label="' + (provider==='ollama' ? 'Suggested (will be downloaded on first use)' : 'Suggested') + '">' + sugg.map(x => `<option value="${x}">${x}</option>`).join('') + '</optgroup>';
+  $('model').innerHTML = html || '<option value="">(none)</option>';
+  const want = selected || info?.default_model || live[0];
+  if (want) $('model').value = want;
+  if (m.error) setStatus(m.error, 'warn');
+}
+async function health() {
+  const h = await api('/api/health');
+  $('brainDot').className = 'dot ' + (h.brain.available ? 'ok' : 'bad');
+  $('brainText').textContent = `${h.brain.provider}/${h.brain.model} ${h.brain.available ? (h.brain.offline ? '· offline ready' : '· online') : '· ' + h.brain.detail}`;
+}
+function setStatus(t, cls) { $('status').textContent = t; $('status').style.color = cls==='warn' ? 'var(--warn)' : cls==='bad' ? 'var(--bad)' : 'var(--muted)'; }
+
+async function saveSetting(obj) { await api('/api/config', {method:'POST', body: JSON.stringify(obj)}); health(); }
+$('provider').onchange = async e => { await saveSetting({provider: e.target.value}); await loadModels(e.target.value); await saveSetting({model: $('model').value}); };
+$('model').onchange = async e => {
+  await saveSetting({model: e.target.value});
+  if ($('provider').value === 'ollama' && !(await api('/api/models?provider=ollama')).installed.includes(e.target.value)) {
+    setStatus('Downloading ' + e.target.value + ' into Ollama (first time only, a few GB)…', 'warn');
+    const r = await api('/api/ollama/pull', {method:'POST', body: JSON.stringify({model: e.target.value})});
+    setStatus(r.ok ? 'Model ready.' : 'Download failed: ' + r.error, r.ok ? '' : 'bad'); health();
+  }
+};
+$('voice').onchange = e => saveSetting({voice: e.target.value});
+$('image_model').onchange = e => saveSetting({image_model: e.target.value});
+$('video_model').onchange = e => saveSetting({video_model: e.target.value});
+$('safe').onchange = e => saveSetting({safe_mode: e.target.checked});
+$('keysBtn').onclick = () => $('keysDlg').showModal();
+$('saveKeys').onclick = async () => {
+  const keys = {}; document.querySelectorAll('#keyRows input').forEach(i => { if (i.value) keys[i.dataset.p] = i.value; });
+  await saveSetting({api_keys: keys}); $('keysDlg').close(); loadConfig();
+};
+$('newBtn').onclick = async () => { await api('/api/chat', {method:'POST', body: JSON.stringify({action:'reset'})}); $('chat').innerHTML = ''; };
+
+async function speak(text) {
+  if (!$('speakBack').checked || !text) return;
+  try {
+    const r = await fetch('/api/tts', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({text})});
+    if (!r.ok) { const e = await r.json(); setStatus('Voice: ' + e.error, 'warn'); return; }
+    const blob = await r.blob();
+    if (audioEl) audioEl.pause();
+    audioEl = new Audio(URL.createObjectURL(blob));
+    await new Promise(res => { audioEl.onended = res; audioEl.onerror = res; audioEl.play(); });
+  } catch (e) { setStatus('Voice error: ' + e, 'warn'); }
+}
+
+function renderResult(r) {
+  (r.tool_events || []).forEach(ev => add('tool', `<b>${esc(ev.tool)}</b> ${esc(JSON.stringify(ev.arguments)).slice(0,200)}\n${esc((ev.result||'').slice(0,600))}${mediaLinks(ev.result||'')}`));
+  const d = add('bot', esc(r.text) + mediaLinks(r.text || ''));
+  if (r.needs_approval) {
+    const box = document.createElement('div'); box.className = 'approve';
+    box.innerHTML = `<button class="danger" id="ap">Approve</button><button class="secondary" id="de">Decline</button>`;
+    d.appendChild(box);
+    box.querySelector('#ap').onclick = () => { box.remove(); sendAction('approve'); };
+    box.querySelector('#de').onclick = () => { box.remove(); sendAction('decline'); };
+  }
+  if (r.error) setStatus(r.error, 'bad');
+}
+async function sendAction(action) {
+  busy = true; setStatus('Working…');
+  const r = await api('/api/chat', {method:'POST', body: JSON.stringify({action})});
+  busy = false; setStatus('Ready.'); renderResult(r); await speak(r.text);
+  if ($('handsFree').checked) startRec();
+}
+async function send(text) {
+  text = (text ?? $('input').value).trim(); if (!text || busy) return;
+  $('input').value = ''; add('me', esc(text)); busy = true; $('send').disabled = true; setStatus('Thinking…');
+  try {
+    const r = await api('/api/chat', {method:'POST', body: JSON.stringify({text})});
+    renderResult(r); setStatus('Ready.'); await speak(r.text);
+    if (r.needs_approval && $('handsFree').checked) setStatus('Say "yes" to approve or "no" to decline.');
+  } catch (e) { add('bot', 'Error: ' + e); setStatus('Error', 'bad'); }
+  busy = false; $('send').disabled = false;
+  if ($('handsFree').checked) startRec();
+}
+$('send').onclick = () => send();
+$('input').addEventListener('keydown', e => { if (e.key === 'Enter' && (e.ctrlKey || !e.shiftKey)) { e.preventDefault(); send(); } });
+document.addEventListener('keydown', e => { if (e.code === 'Space' && document.activeElement !== $('input') && !$('keysDlg').open) { e.preventDefault(); toggleRec(); } });
+
+// ---- microphone -> /api/transcribe ----
+async function startRec() {
+  if (recording || busy) return;
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({audio: true});
+    mediaRecorder = new MediaRecorder(stream); chunks = [];
+    mediaRecorder.ondataavailable = e => chunks.push(e.data);
+    mediaRecorder.onstop = async () => {
+      stream.getTracks().forEach(t => t.stop());
+      const blob = new Blob(chunks, {type: mediaRecorder.mimeType || 'audio/webm'});
+      if (blob.size < 2000) { if ($('handsFree').checked) startRec(); return; }
+      setStatus('Transcribing…');
+      const fd = new FormData(); fd.append('audio', blob, 'speech.webm');
+      const r = await (await fetch('/api/transcribe', {method:'POST', body: fd})).json();
+      if (r.error) { setStatus(r.error, 'bad'); return; }
+      const t = (r.text || '').trim();
+      if (!t) { setStatus('Heard nothing.'); if ($('handsFree').checked) startRec(); return; }
+      const low = t.toLowerCase().replace(/[.!?]/g,'');
+      if (document.querySelector('.approve') && ['yes','approve','ok','okay','go ahead','confirm'].includes(low)) { document.querySelector('.approve').remove(); return sendAction('approve'); }
+      if (document.querySelector('.approve') && ['no','cancel','decline'].includes(low)) { document.querySelector('.approve').remove(); return sendAction('decline'); }
+      send(t);
+    };
+    mediaRecorder.start(); recording = true; $('mic').classList.add('rec'); setStatus('Listening… click the mic (or press Space) when done.');
+    if ($('handsFree').checked) autoStop(stream);
+  } catch (e) { setStatus('Microphone error: ' + e.message, 'bad'); }
+}
+function stopRec() { if (mediaRecorder && recording) { mediaRecorder.stop(); recording = false; $('mic').classList.remove('rec'); } }
+function toggleRec() { recording ? stopRec() : startRec(); }
+$('mic').onclick = toggleRec;
+// simple silence detection for hands-free mode
+function autoStop(stream) {
+  const ctx = new AudioContext(), src = ctx.createMediaStreamSource(stream), an = ctx.createAnalyser(); an.fftSize = 512; src.connect(an);
+  const buf = new Uint8Array(an.fftSize); let spoke = false, quietSince = Date.now(), started = Date.now();
+  const tick = () => {
+    if (!recording) { ctx.close(); return; }
+    an.getByteTimeDomainData(buf); let sum = 0; for (const v of buf) { const d = (v - 128) / 128; sum += d * d; }
+    const rms = Math.sqrt(sum / buf.length);
+    if (rms > 0.02) { spoke = true; quietSince = Date.now(); }
+    if ((spoke && Date.now() - quietSince > 1300) || Date.now() - started > 30000) { stopRec(); ctx.close(); return; }
+    requestAnimationFrame(tick);
+  }; tick();
+}
+$('handsFree').onchange = e => { if (e.target.checked) startRec(); else stopRec(); };
+
+loadConfig();
+add('bot', 'Hi, I\'m Legion. I run on this PC. Pick a brain and a voice above, then type or press the mic. I can open apps, manage files, run commands, take screenshots, control the mouse and keyboard, browse (when online), speak, and generate images and videos locally.');
+</script>
+</body>
+</html>
