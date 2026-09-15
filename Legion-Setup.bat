@@ -8,11 +8,21 @@ if %errorlevel% neq 0 (
   exit /b
 )
 set "PS1=%~dp0setup-everything.ps1"
+if exist "%PS1%" goto run
+set "PS1=%TEMP%\setup-everything.ps1"
+del /q "%PS1%" >nul 2>&1
+echo Downloading the setup script...
+curl.exe -fsSL -o "%PS1%" https://raw.githubusercontent.com/moustafashaban1986-boop/zenithwallart-store/main/setup-everything.ps1
+if not exist "%PS1%" curl.exe -fsSL -o "%PS1%" https://raw.githubusercontent.com/moustafashaban1986-boop/zenithwallart-store/claude/lenovo-legion-ai-video-setup-xnilya/setup-everything.ps1
 if not exist "%PS1%" (
-  set "PS1=%TEMP%\setup-everything.ps1"
-  echo Downloading the setup script...
-  curl.exe -fsSL -o "%TEMP%\setup-everything.ps1" https://raw.githubusercontent.com/moustafashaban1986-boop/zenithwallart-store/main/setup-everything.ps1
+  echo.
+  echo ERROR: could not download setup-everything.ps1. Save it next to this file and run again.
+  pause
+  exit /b 1
 )
+:run
+echo Running %PS1%
 powershell -NoProfile -ExecutionPolicy Bypass -File "%PS1%" %*
 echo.
+echo Log file: %USERPROFILE%\legion-setup.log
 pause

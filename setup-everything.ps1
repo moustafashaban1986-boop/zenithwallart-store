@@ -69,6 +69,11 @@ if (Test-Path (Join-Path $Here "ai-studio\install.ps1")) {
     & git -C $RepoDir pull --ff-only
     Ok "updated $RepoDir"
 } elseif (Get-Command git -ErrorAction SilentlyContinue) {
+    if (Test-Path $RepoDir) {
+        $bak = "$RepoDir.bak-$(Get-Date -Format yyyyMMdd-HHmmss)"
+        Move-Item $RepoDir $bak
+        Warn "existing folder without git history moved to $bak"
+    }
     & git clone $RepoUrl $RepoDir
     if ($LASTEXITCODE -ne 0) { throw "git clone failed" }
     Ok "cloned to $RepoDir"
@@ -164,8 +169,11 @@ if (Get-Command claude -ErrorAction SilentlyContinue) {
             "ComfyUI is installed at $ComfyDir. Read the log, fix any failed step, then: 1) run $ComfyDir\Check-Setup.bat and make sure every model file shows [x] (run $ComfyDir\Download-Models.bat if not); " +
             "2) start $ComfyDir\legion\Start-Assistant.bat and confirm http://127.0.0.1:7860 answers; 3) run 'claude mcp list' and confirm comfyui and legion are registered; " +
             "4) generate one test image through the Legion web API or CLI to prove the GPU pipeline works. Report what you verified."
+    $taskFile = Join-Path $env:USERPROFILE "legion-claude-task.txt"
+    Set-Content -Path $taskFile -Value $task -Encoding UTF8
     Write-Host "  Opening Claude Code in $RepoDir (log in with your claude.ai account when the browser opens) ..."
-    Start-Process powershell -ArgumentList "-NoExit", "-Command", "Set-Location '$RepoDir'; claude `"$task`""
+    Start-Process powershell -ArgumentList @("-NoExit", "-ExecutionPolicy", "Bypass", "-Command",
+        "Set-Location '$RepoDir'; claude (Get-Content -Raw '$taskFile')")
     Ok "Claude Code launched in a new window"
 } else {
     Warn "Claude Code not found. Open a new PowerShell window, run: cd `"$RepoDir`" ; claude"
