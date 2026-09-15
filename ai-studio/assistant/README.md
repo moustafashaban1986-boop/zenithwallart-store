@@ -33,7 +33,7 @@ Options: `INSTALL-ASSISTANT.bat -Model llama3.1:8b`, `-SkipVoice`, `-SkipOllama`
 |---|---|
 | `C:\ComfyUI\legion\Start-Assistant.bat` | The web UI in your browser. Type, or click 🎤 (or press Space) and talk. Replies are spoken. Turn on **Hands-free** to keep listening. |
 | `C:\ComfyUI\legion\Start-Assistant-Voice.bat` | Terminal voice loop with no browser. Say "stop" to quit. Add `--ptt` for push-to-talk. |
-| `C:\ComfyUI\legion\legion.cmd doctor` | Checks brain, ears, voice, tools and ComfyUI. |
+| `C:\ComfyUI\legion\legion.cmd doctor` | Checks brain, ears, voice, tools and ComfyUI. (`legion.cmd` wraps `python_embeded\python.exe -s legion\run_legion.py`, which is needed because the embedded Python ignores `-m legion`.) |
 
 Things to say:
 
@@ -74,9 +74,8 @@ Manual entry for `claude_desktop_config.json`:
 ```json
 "legion": {
   "command": "C:\\ComfyUI\\python_embeded\\python.exe",
-  "args": ["-s", "-m", "legion", "mcp"],
-  "cwd": "C:\\ComfyUI\\legion",
-  "env": { "PYTHONPATH": "C:\\ComfyUI\\legion", "COMFY_BRIDGE_DIR": "C:\\ComfyUI\\claude-comfy" }
+  "args": ["-s", "C:\\ComfyUI\\legion\\run_legion.py", "mcp"],
+  "env": { "COMFY_BRIDGE_DIR": "C:\\ComfyUI\\claude-comfy" }
 }
 ```
 
@@ -98,7 +97,7 @@ Manual entry for `claude_desktop_config.json`:
 pip install -r requirements.txt            # + requirements-voice.txt for speech
 python tests/test_agent.py                 # agent loop, approvals, tool schemas, provider conversions
 python tests/test_web_and_mcp.py           # web API + MCP server end-to-end
-python -m legion serve                     # web UI on Linux/macOS works too (desktop tools are Windows-first)
+python run_legion.py serve                 # web UI on Linux/macOS works too (desktop tools are Windows-first)
 ```
 
 Adding a tool is one function with type hints and a docstring in `legion/tools/*.py`, decorated with `@tool(dangerous=...)`. It appears in the LLM's function list, in the MCP server and in the system prompt automatically.

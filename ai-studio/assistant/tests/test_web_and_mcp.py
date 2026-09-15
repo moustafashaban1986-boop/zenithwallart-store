@@ -81,7 +81,8 @@ async def _mcp_scenario():
         from mcp import ClientSession, StdioServerParameters  # type: ignore
         from mcp.client.stdio import stdio_client  # type: ignore
     env = {**os.environ, "LEGION_HOME": tempfile.mkdtemp(prefix="legion-mcp-")}
-    params = StdioServerParameters(command=sys.executable, args=["-m", "legion", "mcp"], env=env, cwd=str(ROOT))
+    # run_legion.py is what the installed launchers and the Claude config use (embedded Python ignores -m legion)
+    params = StdioServerParameters(command=sys.executable, args=["-s", str(ROOT / "run_legion.py"), "mcp"], env=env, cwd="/")
     async with stdio_client(params) as (read, write):
         async with ClientSession(read, write) as s:
             await s.initialize()
