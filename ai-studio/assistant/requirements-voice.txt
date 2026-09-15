@@ -1,0 +1,7 @@
+# Ears + voice (all offline). Installed by install-assistant.ps1 after the core set.
+faster-whisper>=1.0
+soundfile>=0.12
+sounddevice>=0.4.6
+kokoro>=0.9
+# optional voice cloning (large download on first use):  pip install chatterbox-tts
+# optional precise Windows volume control:               pip install pycaw comtypes
