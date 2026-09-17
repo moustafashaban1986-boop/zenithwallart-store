@@ -131,6 +131,13 @@ if ($NoClaudeCode) { Warn "skipped (-NoClaudeCode)" } else {
         $failures += "Claude Code not installed (run:  irm https://claude.ai/install.ps1 | iex )"
         Warn "Claude Code is not on PATH yet. Open a NEW PowerShell window and run: claude --version"
     }
+    $shortcuts = Join-Path $RepoDir "claude-shortcuts.ps1"
+    if (Test-Path $shortcuts) {
+        try {
+            & $shortcuts -WorkDir $RepoDir -NoLaunch
+            Ok "desktop shortcuts: 'Claude - Full Control' and 'Claude - Remote (phone)'"
+        } catch { Warn "could not create the Claude shortcuts: $_" }
+    }
 }
 
 # ---------------------------------------------------------------------------
