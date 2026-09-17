@@ -9,19 +9,18 @@ REM                              and at https://claude.ai/code on any computer
 REM  Uses claude-shortcuts.ps1 next to this file, or downloads it from GitHub.
 REM  Safe to run again.
 REM ============================================================================
-setlocal
 set "PS1=%~dp0claude-shortcuts.ps1"
-if exist "%PS1%" goto :run
-set "PS1=%TEMP%\claude-shortcuts.ps1"
-echo Downloading claude-shortcuts.ps1 ...
-curl.exe -fsSL -o "%PS1%" "https://raw.githubusercontent.com/moustafashaban1986-boop/zenithwallart-store/main/claude-shortcuts.ps1"
+if not exist "%PS1%" (
+  set "PS1=%TEMP%\claude-shortcuts.ps1"
+  echo Downloading claude-shortcuts.ps1 ...
+  curl.exe -fsSL -o "%TEMP%\claude-shortcuts.ps1" "https://raw.githubusercontent.com/moustafashaban1986-boop/zenithwallart-store/main/claude-shortcuts.ps1"
+)
 if not exist "%PS1%" curl.exe -fsSL -o "%PS1%" "https://raw.githubusercontent.com/moustafashaban1986-boop/zenithwallart-store/claude/lenovo-legion-ai-video-setup-xnilya/claude-shortcuts.ps1"
 if not exist "%PS1%" (
   echo ERROR: could not download claude-shortcuts.ps1. Check the internet connection.
   pause
   exit /b 1
 )
-:run
 powershell -NoProfile -ExecutionPolicy Bypass -File "%PS1%"
 echo.
 pause
